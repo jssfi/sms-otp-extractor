@@ -9,13 +9,7 @@ Planned and debugged by me but built by Codex.
 
 ## What It Does
 
-The main app lives in [`sms-otp-extractor`](sms-otp-extractor/). The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small bundled LiteRT-LM model when the result is not clear.
-
-```text
-SMSReceiver -> CandidateExtractor -> OtpPrefilter -> HeuristicScorer -> AiOtpSelector -> validation -> notification/copy
-```
-
-The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
+The main app lives in [`sms-otp-extractor`](sms-otp-extractor/). The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small bundled LiteRT-LM model when the result is not clear. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
 
 ### What Works:
 
