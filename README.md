@@ -9,7 +9,7 @@ Planned and debugged by me but built by Codex.
 
 ## What It Does
 
-The main app lives in [`sms-otp-extractor`](sms-otp-extractor/). It listens for incoming SMS messages, extracts possible OTP candidates, scores them with fast heuristics, and only asks a small bundled LiteRT-LM model when the result is not clear.
+The main app lives in [`sms-otp-extractor`](sms-otp-extractor/). The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small bundled LiteRT-LM model when the result is not clear.
 
 ```text
 SMSReceiver -> CandidateExtractor -> OtpPrefilter -> HeuristicScorer -> AiOtpSelector -> validation -> notification/copy
@@ -46,7 +46,6 @@ The final selected code must exactly match one regex-extracted candidate. The mo
 - No `INTERNET` permission.
 - No cloud Gemini/OpenAI/API-key dependency.
 - The bundled model runs on-device through LiteRT-LM.
-- SMS text is processed locally inside the app.
 
 ## Bundled Model
 
@@ -60,7 +59,7 @@ This project bundles `SmolLM2-135M-Instruct` converted for LiteRT-LM.
 
 ```text
 sms-otp-extractor/   Real Android app
-LiteRT-LM-test-app/  Earlier local-model experiment/prototype
+LiteRT-LM-test-app/  Local-model experiment/prototype for benchmarking
 ```
 
 ## Build
