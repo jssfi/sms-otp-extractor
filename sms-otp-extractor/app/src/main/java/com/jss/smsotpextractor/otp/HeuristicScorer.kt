@@ -1,7 +1,17 @@
 package com.jss.smsotpextractor.otp
 
 object HeuristicScorer {
-    private val strongPositive = listOf("otp", "code", "verification", "verify", "login", "passcode")
+    private val strongPositive = listOf(
+        "otp",
+        "code",
+        "verification",
+        "verify",
+        "login",
+        "passcode",
+        "koodi",
+        "koodilla",
+        "vahvista",
+    )
     private val weakPositive = listOf("security", "authenticate", "authentication", "2fa", "sign in", "signin")
     private val referenceWords = listOf("ref", "reference", "id", "ticket", "case", "receipt")
 
@@ -38,6 +48,7 @@ object HeuristicScorer {
         if (looksLikeDate(value)) score -= 45
         if (looksLikePhoneOrLongReference(value)) score -= 35
         if (looksLikeMoneyContext(context)) score -= 20
+        if (looksLikeDecimalMoneyAmount(value, context)) score -= 50
 
         return score
     }
@@ -56,5 +67,9 @@ object HeuristicScorer {
 
     private fun looksLikeMoneyContext(context: String): Boolean {
         return listOf("eur", "usd", "$", "€", "amount", "paid", "payment").any { it in context }
+    }
+
+    private fun looksLikeDecimalMoneyAmount(value: String, context: String): Boolean {
+        return Regex("""\b${Regex.escape(value)}[,.]\d{2}\b""").containsMatchIn(context)
     }
 }

@@ -1,7 +1,7 @@
 package com.jss.smsotpextractor.otp
 
 object CandidateExtractor {
-    private val numericCandidate = Regex("""(?<!\d)\d{4,10}(?!\d)""")
+    private val numericCandidate = Regex("""(?i)(?<![a-z0-9])\d{4,10}(?![a-z0-9])""")
     private val alphaNumericCandidate = Regex("""(?i)(?<![a-z0-9])[a-z0-9]{6,12}(?![a-z0-9])""")
 
     fun extract(sms: String): List<OtpCandidate> {

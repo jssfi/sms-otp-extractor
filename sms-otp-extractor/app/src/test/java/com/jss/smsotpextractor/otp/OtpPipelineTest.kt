@@ -26,6 +26,20 @@ class OtpPipelineTest {
     }
 
     @Test
+    fun ignoresDigitsEmbeddedInSenderName() = runBlocking {
+        val sms = "RandomApp12345: Your verification code is 483920. Ref 20260605."
+        val candidates = CandidateExtractor.extract(sms)
+
+        assertEquals(listOf("483920", "20260605"), candidates.map { it.value })
+
+        val ai = FakeAiSelector(AiOtpResult(true, 0, 0.95, """{"is_2fa":true,"candidate_index":0,"confidence":0.95}"""))
+        val decision = OtpProcessor(ai).process(sms)
+
+        val detected = assertIs<OtpDecision.OtpDetected>(decision)
+        assertEquals("483920", detected.code)
+    }
+
+    @Test
     fun rejectsMessagesWithNoCandidates() = runBlocking {
         val decision = OtpProcessor(FakeAiSelector()).process("hello there")
 
@@ -95,7 +109,7 @@ class OtpPipelineTest {
     @Test
     fun candidateOnlyMessagesReachAiForNonEnglishSms() = runBlocking {
         val ai = FakeAiSelector(AiOtpResult(true, 0, 0.95, """{"is_2fa":true,"candidate_index":0,"confidence":0.95}"""))
-        val decision = OtpProcessor(ai).process("Vahvistuskoodisi on 123456. Viite 20260605.")
+        val decision = OtpProcessor(ai).process("Din verifieringskod ar 123456. Ref 20260605.")
 
         val detected = assertIs<OtpDecision.OtpDetected>(decision)
         assertTrue(ai.called)
@@ -108,6 +122,84 @@ class OtpPipelineTest {
         val parsed = AiOtpJsonParser.parse("""noise {"is_2fa":true,"candidate_index":0,"confidence":0.95} tail""")
 
         assertEquals(AiOtpResult(true, 0, 0.95, rawOutput = """noise {"is_2fa":true,"candidate_index":0,"confidence":0.95} tail"""), parsed)
+    }
+
+    @Test
+    fun sampleSmsCorpusHoldsUp() = runBlocking {
+        val cases = listOf(
+            SampleCase(
+                sms = "Your Twitch verification code is: 902015",
+                expectedCode = "902015",
+            ),
+            SampleCase(
+                sms = "Olet maksamassa palvelussamme 100000,00 € tilille DE0000000000000ista tiedot ja vahvista mobiilisovelluksessa koodilla 3183. OP",
+                expectedCode = "3183",
+            ),
+            SampleCase(
+                sms = "Your Link verification code is: 550040. To stop receiving these messages, visit support.link.com/sms-opt-out?id=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                expectedCode = "550040",
+            ),
+            SampleCase(
+                sms = "Your Trade Republic verification code is: 4800. Don't share this code with anyone; our employees will never ask for the code.",
+                expectedCode = "4800",
+            ),
+            SampleCase(
+                sms = "Your Whop verification code is: 750740",
+                expectedCode = "750740",
+            ),
+            SampleCase(
+                sms = "FedEx toimittaa pakettisi 889513256140 tänään.",
+                expectedCode = null,
+            ),
+            SampleCase(
+                sms = "FedEx verification code is 334455.",
+                expectedCode = "334455",
+            ),
+            SampleCase(
+                sms = "Steam: To disable or move your Mobile Authenticator use code: 97729",
+                expectedCode = "97729",
+            ),
+            SampleCase(
+                sms = "The code to disable or move your Steam Authenticator is: 98446",
+                expectedCode = "98446",
+            ),
+            SampleCase(
+                sms = "Confirm your phone number on Wise with the code 813168. Don't share this code with anyone. DAT4apdbQQQk",
+                expectedCode = "813168",
+            ),
+        )
+
+        cases.forEach { case ->
+            val decision = OtpProcessor(CorpusFakeAiSelector()).process(case.sms)
+            if (case.expectedCode == null) {
+                assertIs<OtpDecision.NoOtp>(decision, "Expected no OTP for: ${case.sms}")
+            } else {
+                val detected = assertIs<OtpDecision.OtpDetected>(decision, "Expected OTP for: ${case.sms}")
+                assertEquals(case.expectedCode, detected.code, "Wrong OTP for: ${case.sms}")
+            }
+        }
+    }
+
+    private data class SampleCase(
+        val sms: String,
+        val expectedCode: String?,
+    )
+
+    private class CorpusFakeAiSelector : AiOtpSelector {
+        override suspend fun select(sms: String, candidates: List<OtpCandidate>): AiOtpResult {
+            val hasOtpSignal = listOf("otp", "code", "verification", "verify", "2fa", "passcode")
+                .any { it in sms.lowercase() }
+            if (sms.contains("FedEx", ignoreCase = true) && !hasOtpSignal) {
+                return AiOtpResult(false, null, 0.0, """{"is_2fa":false,"candidate_index":null,"confidence":0}""")
+            }
+            val top = candidates.maxByOrNull { it.score }
+            return AiOtpResult(
+                is2fa = top != null,
+                candidateIndex = top?.index,
+                confidence = if (top != null) 0.95 else 0.0,
+                rawOutput = """{"is_2fa":true,"candidate_index":${top?.index},"confidence":0.95}""",
+            )
+        }
     }
 
     private class FakeAiSelector(

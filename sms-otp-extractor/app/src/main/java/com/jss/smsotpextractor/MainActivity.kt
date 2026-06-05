@@ -93,7 +93,7 @@ class MainActivity : Activity() {
     }
 
     private fun runSample() {
-        val sms = "Nordea: Your verification code is 483920. Ref 20260605."
+        val sms = "RandomApp12345: Your verification code is 483920. Ref 20260605."
         output.text = "Processing sample..."
         scope.launch {
             val decision = OtpProcessor(LiteRtAiOtpSelector(this@MainActivity)).process(sms)
