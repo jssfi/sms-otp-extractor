@@ -15,8 +15,8 @@ android {
         applicationId = "com.jss.smsotpextractor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.4"
     }
 
     flavorDimensions += "modelDistribution"
@@ -76,7 +76,7 @@ kotlin {
 }
 
 dependencies {
-    implementation("com.google.ai.edge.litertlm:litertlm-android:0.13.1")
+    add("bundledImplementation", "com.google.ai.edge.litertlm:litertlm-android:0.13.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.0")

@@ -1,7 +1,7 @@
 package com.jss.smsotpextractor.otp
 
 import kotlinx.coroutines.runBlocking
-import com.jss.smsotpextractor.ModelBenchmark
+import com.jss.smsotpextractor.ModelBenchmarkClassifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -119,7 +119,7 @@ class OtpPipelineTest {
 
     @Test
     fun benchmarkWarnsForUnparseableModelOutput() {
-        val warning = ModelBenchmark.classifyForTests(
+        val warning = ModelBenchmarkClassifier.classifyForTests(
             parseableCount = 1,
             correctCount = 3,
             averageLatencyMs = 100.0,
@@ -130,7 +130,7 @@ class OtpPipelineTest {
 
     @Test
     fun benchmarkWarnsForSlowModel() {
-        val warning = ModelBenchmark.classifyForTests(
+        val warning = ModelBenchmarkClassifier.classifyForTests(
             parseableCount = 3,
             correctCount = 3,
             averageLatencyMs = 2_501.0,
@@ -141,7 +141,7 @@ class OtpPipelineTest {
 
     @Test
     fun benchmarkWarnsForLowAccuracyModel() {
-        val warning = ModelBenchmark.classifyForTests(
+        val warning = ModelBenchmarkClassifier.classifyForTests(
             parseableCount = 3,
             correctCount = 1,
             averageLatencyMs = 100.0,

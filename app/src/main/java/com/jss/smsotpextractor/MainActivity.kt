@@ -3,7 +3,6 @@ package com.jss.smsotpextractor
 import android.Manifest
 import android.app.Activity
 import android.content.SharedPreferences
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Color
@@ -29,24 +28,17 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Space
 import android.widget.TextView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
     private val animationHandler = Handler(Looper.getMainLooper())
-    private val uiScope = CoroutineScope(Dispatchers.Main)
     private var dotFrame = 0
     private lateinit var listeningLabel: TextView
     private lateinit var historyList: LinearLayout
     private var modelStatusTitle: TextView? = null
     private var modelStatusDetail: TextView? = null
-    private var modelImportButton: Button? = null
-    private var modelImporting = false
     private var observingHistory = false
     private val historyChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (!ResultStore.isHistoryKey(key)) return@OnSharedPreferenceChangeListener
@@ -110,14 +102,6 @@ class MainActivity : Activity() {
         } else {
             showPermissionOnboarding(permissionDenied = true)
         }
-    }
-
-    @Deprecated("Deprecated platform callback is sufficient for this Activity-only app.")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQUEST_IMPORT_MODEL || resultCode != RESULT_OK) return
-        val uri = data?.data ?: return
-        importModel(uri)
     }
 
     private fun showMainContent() {
@@ -260,52 +244,17 @@ class MainActivity : Activity() {
                 matchWrap(top = 6.dp),
             )
             addView(
-                if (BuildConfig.AI_ENABLED) {
-                    actionButton("Import .litertlm", Colors.primary, Colors.onPrimary) {
-                        openModelPicker()
-                    }.apply {
-                        modelImportButton = this
-                    }
-                } else {
-                    TextView(this@MainActivity).apply {
-                        text = "Heuristics only"
-                        textSize = 14f
-                        typeface = Typeface.DEFAULT_BOLD
-                        gravity = Gravity.CENTER
-                        setTextColor(Colors.primary)
-                        background = rounded(Colors.secondaryContainer, 24.dp)
-                        minHeight = 48.dp
-                    }
+                TextView(this@MainActivity).apply {
+                    text = "Heuristics only"
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    gravity = Gravity.CENTER
+                    setTextColor(Colors.primary)
+                    background = rounded(Colors.secondaryContainer, 24.dp)
+                    minHeight = 48.dp
                 },
                 matchWrap(top = 14.dp),
             )
-        }
-    }
-
-    private fun openModelPicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*"
-            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/octet-stream", "application/x-binary", "*/*"))
-        }
-        startActivityForResult(intent, REQUEST_IMPORT_MODEL)
-    }
-
-    private fun importModel(uri: android.net.Uri) {
-        modelImporting = true
-        refreshModelStatus(statusOverride = "Testing selected model", detailOverride = "Copying the file, starting LiteRT, and running a short OTP check.")
-        uiScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                ModelImporter.import(this@MainActivity, uri)
-            }
-            modelImporting = false
-            when (result) {
-                is ModelImportResult.Imported -> refreshModelStatus()
-                is ModelImportResult.Failed -> refreshModelStatus(
-                    statusOverride = "Import failed",
-                    detailOverride = result.message,
-                )
-            }
         }
     }
 
@@ -314,30 +263,8 @@ class MainActivity : Activity() {
         detailOverride: String? = null,
     ) {
         if (BuildConfig.BUNDLED_MODEL) return
-        if (!BuildConfig.AI_ENABLED) {
-            modelStatusTitle?.text = "Heuristics-only build"
-            modelStatusDetail?.text = "No LiteRT model is bundled or imported. Ambiguous messages are handled by local rules only."
-            modelImportButton?.isEnabled = false
-            return
-        }
-        val metadata = ImportedModelStore.metadata(this)
-        val modelExists = ImportedModelStore.modelFile(this).exists()
-        val title = statusOverride ?: when {
-            modelImporting -> "Testing selected model"
-            metadata == null || !modelExists -> "No LiteRT model imported"
-            metadata.hasWarning -> "Model ready with warning"
-            else -> "Model ready"
-        }
-        val detail = detailOverride ?: when {
-            modelImporting -> "Copying the file, starting LiteRT, and running a short OTP check."
-            metadata == null || !modelExists -> "Import any compatible .litertlm model to enable AI review for ambiguous messages."
-            metadata.hasWarning -> "${metadata.displayName}\n${metadata.warning}\nAverage test latency: ${metadata.averageLatencyMs.formatMs()}"
-            else -> "${metadata.displayName}\nAverage test latency: ${metadata.averageLatencyMs.formatMs()}"
-        }
-        modelStatusTitle?.text = title
-        modelStatusDetail?.text = detail
-        modelImportButton?.isEnabled = !modelImporting
-        modelImportButton?.text = if (metadata == null || !modelExists) "Import .litertlm" else "Replace model"
+        modelStatusTitle?.text = statusOverride ?: "Heuristics-only build"
+        modelStatusDetail?.text = detailOverride ?: "No LiteRT model is bundled or imported. Ambiguous messages are handled by local rules only."
     }
 
     private fun renderHistory() {
@@ -692,7 +619,6 @@ class MainActivity : Activity() {
 
     private companion object {
         const val REQUEST_PERMISSIONS = 10
-        const val REQUEST_IMPORT_MODEL = 11
         const val PREF_ONBOARDING_COMPLETE = "onboarding_complete"
 
         object Colors {
@@ -712,8 +638,6 @@ class MainActivity : Activity() {
             val onSurfaceMuted = Color.rgb(88, 84, 93)
         }
     }
-
-    private fun Double.formatMs(): String = "%.0f ms".format(this)
 
     private class OtpDemoView(context: Activity) : View(context) {
         private val density = resources.displayMetrics.density

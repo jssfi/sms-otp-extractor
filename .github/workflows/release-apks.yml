@@ -74,6 +74,10 @@ jobs:
             echo "Lite APK unexpectedly contains model assets"
             exit 1
           fi
+          if unzip -l release-assets/sms-otp-${GITHUB_REF_NAME}-lite.apk | grep -Ei 'LiteRt|litertlm'; then
+            echo "Lite APK unexpectedly contains LiteRT binaries"
+            exit 1
+          fi
 
       - name: Upload APKs to GitHub release
         env:
