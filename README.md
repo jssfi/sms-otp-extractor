@@ -24,26 +24,35 @@ The app listens for incoming SMS messages, extracts possible OTP candidates, sco
 ### What Works:
 
 - Common English OTPs
-- 4-6 digit codes near words like "code", "verification" or "OTP"
-- Avoiding some non-codes like references or (some) tracking numbers
+- Common sign-in, 2FA, MFA, password reset and phone verification SMS templates
+- 4-6 digit codes near words like "code", "verification", "OTP", "PIN" or "passcode"
+- Some transaction/card OTP messages, like "your OTP for purchase ... is 123456"
+- A focused set of Finnish, Swedish, Spanish, Italian, German and French OTP wording
+- Accented keyword variants like "código" / "verificación"
+- Avoiding many non-codes like dates, receipts, balances, invoices, references, coupons, appointments, tracking numbers and URL/query IDs
 - Avoiding sender names with numbers
+- Avoiding most codes that only appear inside links or URL query parameters
 - Auto-copying detected OTPs
 - Fully offline processing
-- Fast processing, few ms for heuristic or 1-2 s with LiteRT-LM
+- Fast processing, usually a few ms for heuristic-only matches or 1-2 s with LiteRT-LM
 
 ### Kinda works
-- Non english OTPs
+
+- Non-English OTPs outside the focused keyword set
 - Multiple candidate OTP messages
 - Messages with URLs or other miscellaneous stuff
+- Alphanumeric OTPs
+- Payment/transaction OTPs with a lot of extra card, amount or merchant context
 
 ### Most likely does NOT work
 
-- Alphanumeric OTPs
 - Weirdly formatted OTPs
 - Non-English messages with bad context
-- Codes splitted with spaces like "1 2 3 4"
+- Codes split with spaces like "1 2 3 4"
 - Messages with no obvious code (duh)
 - Messages with a link to approve (duh)
+- App-specific approval links with no actual code in the SMS
+- Long alphanumeric tokens that look like session IDs instead of short OTPs
 
 ## Privacy
 
