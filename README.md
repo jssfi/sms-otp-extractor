@@ -17,7 +17,7 @@ Planned and debugged by me but built by Codex.
 Download one of the APKs from the latest GitHub Release:
 
 - `sms-otp-<tag>-bundled.apk` includes the LiteRT-LM model.
-- `sms-otp-<tag>-lite.apk` is the small heuristics-only build.
+- `sms-otp-<tag>-lite.apk` is the small heuristics-only build. (I recommend using this version for the best compatibility)
 
 Releasing this to the Play Store is unfeasible since the app needs SMS permissions to work.
 
@@ -33,13 +33,15 @@ If Android blocks the install, make sure you downloaded the APK from the GitHub 
 
 ## Screenshots
 
+Demo video: [README_Contents/20260606-1932-26.5062138.mp4](README_Contents/20260606-1932-26.5062138.mp4)
+
 | Onboarding | Demo | Copied |
 | --- | --- | --- |
-| <img src="screenshots/Screenshot%202026-06-06%20221659.png" width="220" alt="Onboarding screen explaining SMS access"> | <img src="screenshots/Screenshot%202026-06-06%20221708.png" width="220" alt="Demo animation showing a new SMS being scanned"> | <img src="screenshots/Screenshot%202026-06-06%20221717.png" width="220" alt="Demo animation showing code copied to clipboard"> |
+| <img src="README_Contents/Screenshot%202026-06-06%20221659.png" width="220" alt="Onboarding screen explaining SMS access"> | <img src="README_Contents/Screenshot%202026-06-06%20221708.png" width="220" alt="Demo animation showing a new SMS being scanned"> | <img src="README_Contents/Screenshot%202026-06-06%20221717.png" width="220" alt="Demo animation showing code copied to clipboard"> |
 
 | Main screen | Recent activity |
 | --- | --- |
-| <img src="screenshots/Screenshot%202026-06-06%20221725.png" width="220" alt="Main app screen in the heuristics-only build"> | <img src="screenshots/Screenshot%202026-06-06%20222020.png" width="220" alt="Recent activity showing recognized and skipped SMS messages"> |
+| <img src="README_Contents/Screenshot%202026-06-06%20221725.png" width="220" alt="Main app screen in the heuristics-only build"> | <img src="README_Contents/Screenshot%202026-06-06%20222020.png" width="220" alt="Recent activity showing recognized and skipped SMS messages"> |
 
 ## The app has two different versions:
 
