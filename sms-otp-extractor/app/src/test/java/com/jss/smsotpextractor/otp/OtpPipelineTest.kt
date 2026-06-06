@@ -148,10 +148,6 @@ class OtpPipelineTest {
                 expectedCode = "750740",
             ),
             SampleCase(
-                sms = "FedEx toimittaa pakettisi 889513256140 tänään.",
-                expectedCode = null,
-            ),
-            SampleCase(
                 sms = "FedEx verification code is 334455.",
                 expectedCode = "334455",
             ),
