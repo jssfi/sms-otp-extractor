@@ -9,7 +9,7 @@ Planned and debugged by me but built by Codex.
 
 ## What It Does
 
-The main app lives in [`sms-otp-extractor`](sms-otp-extractor/). The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small bundled LiteRT-LM model when the result is not clear. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
+The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small bundled LiteRT-LM model when the result is not clear. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
 
 ### What Works:
 
@@ -49,19 +49,11 @@ This project bundles `SmolLM2-135M-Instruct` converted for LiteRT-LM.
 - Base model: https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct
 - License: Apache-2.0
 
-## Project Layout
-
-```text
-sms-otp-extractor/   Real Android app
-LiteRT-LM-test-app/  Local-model experiment/prototype for benchmarking
-```
-
 ## Build
 
-From the main app folder:
+From the repo root:
 
 ```powershell
-cd sms-otp-extractor
 .\gradlew.bat assembleDebug --console=plain
 ```
 
@@ -74,7 +66,7 @@ Run unit tests:
 The debug APK will be generated at:
 
 ```text
-sms-otp-extractor/app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ## Notes
