@@ -153,12 +153,71 @@ class OtpPipelineTest {
     @Test
     fun candidateOnlyMessagesReachAiForNonEnglishSms() = runBlocking {
         val ai = FakeAiSelector(AiOtpResult(true, 0, 0.95, """{"is_2fa":true,"candidate_index":0,"confidence":0.95}"""))
-        val decision = OtpProcessor(ai).process("Din verifieringskod ar 123456. Ref 20260605.")
+        val decision = OtpProcessor(ai).process("Votre cle temporaire est 123456. Ref 20260605.")
 
         val detected = assertIs<OtpDecision.OtpDetected>(decision)
         assertTrue(ai.called)
         assertEquals("123456", detected.code)
         assertEquals("ai", detected.source)
+    }
+
+    @Test
+    fun multilingualOtpKeywordsCanBeHandledByHeuristic() = runBlocking {
+        val cases = listOf(
+            "Din verifieringskod ar 123456.",
+            "Tu codigo de verificacion es 654321.",
+            "Sinun koodi on 482913.",
+            "Dein TAN ist 928374.",
+        )
+
+        cases.forEach { sms ->
+            val ai = FakeAiSelector()
+            val detected = assertIs<OtpDecision.OtpDetected>(OtpProcessor(ai).process(sms), "Expected OTP for: $sms")
+            assertFalse(ai.called, "Expected heuristic decision for: $sms")
+            assertEquals("heuristic", detected.source)
+        }
+    }
+
+    @Test
+    fun structuralPatternsBoostCodesWithoutDependingOnExactKeywordOrder() = runBlocking {
+        val ai = FakeAiSelector()
+        val detected = assertIs<OtpDecision.OtpDetected>(
+            OtpProcessor(ai).process("482913 is your sign-in code. It expires in 5 minutes."),
+        )
+
+        assertEquals("482913", detected.code)
+        assertEquals("heuristic", detected.source)
+        assertFalse(ai.called)
+    }
+
+    @Test
+    fun prefersCodeBeforeUrlQueryReference() = runBlocking {
+        val decision = OtpProcessor(CorpusFakeAiSelector()).process(
+            "Your login code is 482913. Continue at https://example.test/login?id=20260605",
+        )
+
+        val detected = assertIs<OtpDecision.OtpDetected>(decision)
+        assertEquals("482913", detected.code)
+    }
+
+    @Test
+    fun rejectsReferenceHeavyShippingMessages() = runBlocking {
+        val decision = OtpProcessor(FakeAiSelector()).process(
+            "Your order 482913 has shipped. Tracking 999888777 will update soon.",
+        )
+
+        assertIs<OtpDecision.NoOtp>(decision)
+        assertEquals("negative_keyword", decision.reason)
+    }
+
+    @Test
+    fun rejectsUrlOnlyQueryCodeReferences() = runBlocking {
+        val decision = OtpProcessor(FakeAiSelector()).process(
+            "View your receipt at https://example.test/receipt?code=482913",
+        )
+
+        assertIs<OtpDecision.NoOtp>(decision)
+        assertEquals("negative_keyword", decision.reason)
     }
 
     @Test
@@ -206,6 +265,34 @@ class OtpPipelineTest {
             SampleCase(
                 sms = "Confirm your phone number on Wise with the code 813168. Don't share this code with anyone. DAT4apdbQQQk",
                 expectedCode = "813168",
+            ),
+            SampleCase(
+                sms = "Din verifieringskod ar 120045. Dela den inte med nagon.",
+                expectedCode = "120045",
+            ),
+            SampleCase(
+                sms = "Tu codigo para iniciar sesion es 770088.",
+                expectedCode = "770088",
+            ),
+            SampleCase(
+                sms = "482913 is your sign-in code. It expires in 5 minutes.",
+                expectedCode = "482913",
+            ),
+            SampleCase(
+                sms = "Use 554433 to login. Never share this code.",
+                expectedCode = "554433",
+            ),
+            SampleCase(
+                sms = "Your order 482913 has shipped. Tracking 999888777 will update soon.",
+                expectedCode = null,
+            ),
+            SampleCase(
+                sms = "Your appointment is confirmed for 1200 on 20260605.",
+                expectedCode = null,
+            ),
+            SampleCase(
+                sms = "Receipt 482913: paid 49.99 EUR. Balance 120000.",
+                expectedCode = null,
             ),
         )
 

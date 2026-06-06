@@ -4,17 +4,40 @@ object OtpPrefilter {
     private val positiveKeywords = listOf(
         "otp",
         "code",
+        "pin",
         "verification",
+        "verifiering",
+        "verifieringskod",
         "verify",
+        "verifica",
+        "verificar",
+        "verificacion",
+        "verifizierung",
+        "confirma",
+        "confirmar",
+        "confirme",
         "login",
+        "inloggning",
+        "kirjautuminen",
         "sign in",
         "signin",
+        "sign-in",
         "2fa",
         "two-factor",
         "authentication",
         "passcode",
         "one-time",
         "security code",
+        "koodi",
+        "koodilla",
+        "vahvistus",
+        "vahvista",
+        "tunnusluku",
+        "codigo",
+        "codice",
+        "kod",
+        "kennwort",
+        "tan",
     )
 
     private val negativeKeywords = listOf(
@@ -26,6 +49,14 @@ object OtpPrefilter {
         "offer",
         "sale",
         "appointment",
+        "tracking",
+        "shipment",
+        "delivery",
+        "order",
+        "ticket",
+        "case",
+        "paid",
+        "payment",
     )
 
     fun classify(sms: String, candidates: List<OtpCandidate>): PrefilterResult {
@@ -34,16 +65,29 @@ object OtpPrefilter {
         }
 
         val normalized = sms.lowercase()
-        val hasNegative = negativeKeywords.any { it in normalized }
-        if (hasNegative) {
+        val keywordText = stripUrlNoise(normalized)
+        val hasPositive = containsAnyKeyword(keywordText, positiveKeywords)
+        val hasNegative = containsAnyKeyword(keywordText, negativeKeywords)
+        if (hasNegative && !hasPositive) {
             return PrefilterResult(possibleOtp = false, reason = "negative_keyword")
         }
 
-        val hasPositive = positiveKeywords.any { it in normalized }
         if (hasPositive) {
             return PrefilterResult(possibleOtp = true, reason = "otp_keyword")
         }
 
         return PrefilterResult(possibleOtp = true, reason = "candidate_only")
+    }
+
+    private fun stripUrlNoise(text: String): String {
+        return text
+            .replace(Regex("""https?://\S+|www\.\S+"""), " ")
+            .replace(Regex("""[?&][a-z0-9_-]+=[^\s&]+"""), " ")
+    }
+
+    private fun containsAnyKeyword(text: String, keywords: List<String>): Boolean {
+        return keywords.any { keyword ->
+            Regex("""(?<![a-z0-9])${Regex.escape(keyword)}(?![a-z0-9])""").containsMatchIn(text)
+        }
     }
 }
