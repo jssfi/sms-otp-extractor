@@ -54,7 +54,7 @@ jobs:
         run: |
           mkdir -p release-assets
           cp app/build/outputs/apk/bundled/release/app-bundled-release.apk "release-assets/sms-otp-${GITHUB_REF_NAME}-bundled.apk"
-          cp app/build/outputs/apk/lite/release/app-lite-release.apk "release-assets/sms-otp-${GITHUB_REF_NAME}-lite.apk"
+          cp app/build/outputs/apk/lite/release/app-lite-release.apk "release-assets/sms-otp-${GITHUB_REF_NAME}-lite-experimental.apk"
 
       - name: Upload APKs to GitHub release
         env:

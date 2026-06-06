@@ -80,6 +80,8 @@ app/build/outputs/apk/bundled/debug/app-bundled-debug.apk
 app/build/outputs/apk/lite/debug/app-lite-debug.apk
 ```
 
+GitHub release uploads are named `sms-otp-<tag>-bundled.apk` and `sms-otp-<tag>-lite-experimental.apk`.
+
 Build both release APKs locally:
 
 ```powershell
