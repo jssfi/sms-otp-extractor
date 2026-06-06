@@ -2,14 +2,24 @@
 
 An Android Kotlin prototype for detecting one-time passwords from SMS messages locally, without cloud APIs or network access.
 
-App tries to imitate the built-in functionality on iOS but on Android.
+App tries to imitate the similar built-in feature on iOS but on Android.
 
 Planned and debugged by me but built by Codex.
 
+## The app has two different versions:
+
+### 1. LiteRT-LM model bundled in
+- In this version the tested LiteRT-LM model is bundled into the app.
+- Download size is bigger, but setup is much faster.
+
+### 2. No model bundled in
+- The APK size is much smaller, but you need to find and download a suitable LiteRT-LM model yourself.
+- The app lets you import any `.litertlm` file through Android's file picker.
+- The app tests the imported model locally and warns if it looks slow or unreliable, but still lets you use it.
 
 ## What It Does
 
-The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small bundled LiteRT-LM model when the result is not clear. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
+The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small LiteRT-LM model when the result is not clear. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
 
 ### What Works:
 
@@ -38,12 +48,12 @@ The app listens for incoming SMS messages, extracts possible OTP candidates, sco
 ## Privacy
 
 - No `INTERNET` permission.
-- No cloud Gemini/OpenAI/API-key dependency.
-- The bundled model runs on-device through LiteRT-LM.
+- No cloud dependency.
+- The model runs on-device through LiteRT-LM.
 
-## Bundled Model
+## Tested Model
 
-This project bundles `SmolLM2-135M-Instruct` converted for LiteRT-LM.
+The bundled release includes `SmolLM2-135M-Instruct` converted for LiteRT-LM.
 
 - Model: https://huggingface.co/litert-community/SmolLM2-135M-Instruct
 - Base model: https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct
@@ -54,20 +64,29 @@ This project bundles `SmolLM2-135M-Instruct` converted for LiteRT-LM.
 From the repo root:
 
 ```powershell
-.\gradlew.bat assembleDebug --console=plain
+.\gradlew.bat :app:assembleAllDebug --console=plain
 ```
 
 Run unit tests:
 
 ```powershell
-.\gradlew.bat testDebugUnitTest --console=plain
+.\gradlew.bat testLiteDebugUnitTest --console=plain
 ```
 
-The debug APK will be generated at:
+The debug APKs will be generated at:
 
 ```text
-app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/bundled/debug/app-bundled-debug.apk
+app/build/outputs/apk/lite/debug/app-lite-debug.apk
 ```
+
+Build both release APKs locally:
+
+```powershell
+.\gradlew.bat :app:assembleAllRelease --console=plain
+```
+
+If signing environment variables are not present, release APKs are built unsigned.
 
 ## Notes
 

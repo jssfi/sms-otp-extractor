@@ -1,6 +1,7 @@
 package com.jss.smsotpextractor.otp
 
 import kotlinx.coroutines.runBlocking
+import com.jss.smsotpextractor.ModelBenchmark
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -104,6 +105,49 @@ class OtpPipelineTest {
 
         assertIs<OtpDecision.NoOtp>(decision)
         }
+    }
+
+    @Test
+    fun noModelAiResultStillAllowsHeuristicFallback() = runBlocking {
+        val ai = FakeAiSelector(AiOtpResult(false, null, 0.0, "AI unavailable: no LiteRT model imported"))
+        val decision = OtpProcessor(ai).process("2FA values: 111111 and 222222")
+
+        val detected = assertIs<OtpDecision.OtpDetected>(decision)
+        assertEquals("heuristic_fallback", detected.source)
+        assertTrue(detected.aiRawOutput?.contains("AI unavailable") == true)
+    }
+
+    @Test
+    fun benchmarkWarnsForUnparseableModelOutput() {
+        val warning = ModelBenchmark.classifyForTests(
+            parseableCount = 1,
+            correctCount = 3,
+            averageLatencyMs = 100.0,
+        )
+
+        assertEquals("This model may not follow the required output format.", warning)
+    }
+
+    @Test
+    fun benchmarkWarnsForSlowModel() {
+        val warning = ModelBenchmark.classifyForTests(
+            parseableCount = 3,
+            correctCount = 3,
+            averageLatencyMs = 2_501.0,
+        )
+
+        assertEquals("This model may be slow for SMS processing.", warning)
+    }
+
+    @Test
+    fun benchmarkWarnsForLowAccuracyModel() {
+        val warning = ModelBenchmark.classifyForTests(
+            parseableCount = 3,
+            correctCount = 1,
+            averageLatencyMs = 100.0,
+        )
+
+        assertEquals("This model may reduce detection accuracy.", warning)
     }
 
     @Test
