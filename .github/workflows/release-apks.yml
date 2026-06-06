@@ -42,6 +42,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/signing"
           printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/signing/release.keystore"
 
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
       - name: Build signed release APKs
         env:
           ANDROID_SIGNING_STORE_FILE: ${{ runner.temp }}/signing/release.keystore
