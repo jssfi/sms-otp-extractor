@@ -1,5 +1,7 @@
 package com.jss.smsotpextractor.otp
 
+import java.text.Normalizer
+
 object OtpPrefilter {
     private val positiveKeywords = listOf(
         "otp",
@@ -64,7 +66,7 @@ object OtpPrefilter {
             return PrefilterResult(possibleOtp = false, reason = "no_candidates")
         }
 
-        val normalized = sms.lowercase()
+        val normalized = normalizeText(sms)
         val keywordText = stripUrlNoise(normalized)
         val hasPositive = containsAnyKeyword(keywordText, positiveKeywords)
         val hasNegative = containsAnyKeyword(keywordText, negativeKeywords)
@@ -89,5 +91,10 @@ object OtpPrefilter {
         return keywords.any { keyword ->
             Regex("""(?<![a-z0-9])${Regex.escape(keyword)}(?![a-z0-9])""").containsMatchIn(text)
         }
+    }
+
+    private fun normalizeText(text: String): String {
+        return Normalizer.normalize(text.lowercase(), Normalizer.Form.NFD)
+            .replace(Regex("""\p{Mn}+"""), "")
     }
 }

@@ -166,6 +166,7 @@ class OtpPipelineTest {
         val cases = listOf(
             "Din verifieringskod ar 123456.",
             "Tu codigo de verificacion es 654321.",
+            "Tu código de verificación es 135790.",
             "Sinun koodi on 482913.",
             "Dein TAN ist 928374.",
         )
@@ -273,6 +274,10 @@ class OtpPipelineTest {
             SampleCase(
                 sms = "Tu codigo para iniciar sesion es 770088.",
                 expectedCode = "770088",
+            ),
+            SampleCase(
+                sms = "Tu código de verificación es 135790.",
+                expectedCode = "135790",
             ),
             SampleCase(
                 sms = "482913 is your sign-in code. It expires in 5 minutes.",

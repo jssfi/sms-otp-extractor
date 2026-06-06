@@ -1,5 +1,7 @@
 package com.jss.smsotpextractor.otp
 
+import java.text.Normalizer
+
 object HeuristicScorer {
     private val strongPositive = listOf(
         "otp",
@@ -87,6 +89,30 @@ object HeuristicScorer {
         "payment",
     )
 
+    private const val BASE_SCORE = 10
+    private const val OTP_LENGTH_SCORE = 20
+    private const val COMMON_NUMERIC_LENGTH_SCORE = 20
+    private const val ALPHANUMERIC_SCORE = 8
+    private const val LOCAL_STRONG_KEYWORD_SCORE = 35
+    private const val LOCAL_WEAK_KEYWORD_SCORE = 15
+    private const val MESSAGE_STRONG_KEYWORD_SCORE = 8
+    private const val PUNCTUATION_PATTERN_SCORE = 18
+    private const val OWNERSHIP_PATTERN_SCORE = 16
+    private const val EXPIRY_OR_SHARING_SCORE = 12
+    private const val SHORT_MESSAGE_SCORE = 8
+    private const val BEFORE_URL_SCORE = 8
+    private const val REPEATED_CODE_SCORE = 10
+    private const val DIRECT_REFERENCE_PENALTY = 30
+    private const val REFERENCE_CONTEXT_PENALTY = 12
+    private const val HARD_NEGATIVE_CONTEXT_PENALTY = 22
+    private const val DATE_PENALTY = 45
+    private const val TIME_PENALTY = 30
+    private const val LONG_REFERENCE_PENALTY = 35
+    private const val URL_QUERY_PENALTY = 35
+    private const val PERCENT_PENALTY = 25
+    private const val MONEY_CONTEXT_PENALTY = 20
+    private const val DECIMAL_MONEY_PENALTY = 50
+
     fun score(sms: String, candidates: List<OtpCandidate>): ScoredCandidates {
         val scored = candidates.map { candidate ->
             candidate.copy(score = scoreCandidate(sms, candidate).coerceIn(0, 100))
@@ -104,34 +130,34 @@ object HeuristicScorer {
 
     private fun scoreCandidate(sms: String, candidate: OtpCandidate): Int {
         val value = candidate.value
-        val context = candidate.context.lowercase()
-        val normalizedSms = sms.lowercase()
-        var score = 10
+        val context = normalizeText(candidate.context)
+        val normalizedSms = normalizeText(sms)
+        var score = BASE_SCORE
 
-        if (value.length in 4..8) score += 20
-        if (value.all(Char::isDigit) && value.length in 5..6) score += 20
-        if (value.any(Char::isLetter) && value.any(Char::isDigit)) score += 8
+        if (value.length in 4..8) score += OTP_LENGTH_SCORE
+        if (value.all(Char::isDigit) && value.length in 5..6) score += COMMON_NUMERIC_LENGTH_SCORE
+        if (value.any(Char::isLetter) && value.any(Char::isDigit)) score += ALPHANUMERIC_SCORE
 
-        if (containsAnyKeyword(context, strongPositive)) score += 35
-        if (containsAnyKeyword(context, weakPositive)) score += 15
-        if (containsAnyKeyword(normalizedSms, strongPositive)) score += 8
-        if (hasOtpPunctuationPattern(value, context)) score += 18
-        if (hasOwnershipPattern(value, context)) score += 16
-        if (hasExpiryOrSharingSignal(context)) score += 12
-        if (isShortOtpLikeMessage(normalizedSms)) score += 8
-        if (appearsBeforeUrl(value, sms)) score += 8
-        if (isRepeated(value, sms)) score += 10
+        if (containsAnyKeyword(context, strongPositive)) score += LOCAL_STRONG_KEYWORD_SCORE
+        if (containsAnyKeyword(context, weakPositive)) score += LOCAL_WEAK_KEYWORD_SCORE
+        if (containsAnyKeyword(normalizedSms, strongPositive)) score += MESSAGE_STRONG_KEYWORD_SCORE
+        if (hasOtpPunctuationPattern(value, context)) score += PUNCTUATION_PATTERN_SCORE
+        if (hasOwnershipPattern(value, context)) score += OWNERSHIP_PATTERN_SCORE
+        if (hasExpiryOrSharingSignal(context)) score += EXPIRY_OR_SHARING_SCORE
+        if (isShortOtpLikeMessage(normalizedSms)) score += SHORT_MESSAGE_SCORE
+        if (appearsBeforeUrl(value, sms)) score += BEFORE_URL_SCORE
+        if (isRepeated(value, sms)) score += REPEATED_CODE_SCORE
 
-        if (referenceWords.any { word -> Regex("""(?<![a-z0-9])$word\W+${Regex.escape(value.lowercase())}\b""").containsMatchIn(context) }) score -= 30
-        if (containsAnyKeyword(context, referenceWords) && !containsAnyKeyword(context, strongPositive)) score -= 12
-        if (containsAnyKeyword(context, hardNegativeWords) && !containsAnyKeyword(context, strongPositive)) score -= 22
-        if (looksLikeDate(value)) score -= 45
-        if (looksLikeTime(value, context)) score -= 30
-        if (looksLikePhoneOrLongReference(value)) score -= 35
-        if (looksLikeUrlOrQueryValue(value, context)) score -= 35
-        if (looksLikePercent(value, context)) score -= 25
-        if (looksLikeMoneyContext(context)) score -= 20
-        if (looksLikeDecimalMoneyAmount(value, context)) score -= 50
+        if (referenceWords.any { word -> Regex("""(?<![a-z0-9])$word\W+${Regex.escape(value.lowercase())}\b""").containsMatchIn(context) }) score -= DIRECT_REFERENCE_PENALTY
+        if (containsAnyKeyword(context, referenceWords) && !containsAnyKeyword(context, strongPositive)) score -= REFERENCE_CONTEXT_PENALTY
+        if (containsAnyKeyword(context, hardNegativeWords) && !containsAnyKeyword(context, strongPositive)) score -= HARD_NEGATIVE_CONTEXT_PENALTY
+        if (looksLikeDate(value)) score -= DATE_PENALTY
+        if (looksLikeTime(value, context)) score -= TIME_PENALTY
+        if (looksLikePhoneOrLongReference(value)) score -= LONG_REFERENCE_PENALTY
+        if (looksLikeUrlOrQueryValue(value, context)) score -= URL_QUERY_PENALTY
+        if (looksLikePercent(value, context)) score -= PERCENT_PENALTY
+        if (looksLikeMoneyContext(context)) score -= MONEY_CONTEXT_PENALTY
+        if (looksLikeDecimalMoneyAmount(value, context)) score -= DECIMAL_MONEY_PENALTY
 
         return score
     }
@@ -176,6 +202,11 @@ object HeuristicScorer {
         return keywords.any { keyword ->
             Regex("""(?<![a-z0-9])${Regex.escape(keyword)}(?![a-z0-9])""").containsMatchIn(text)
         }
+    }
+
+    private fun normalizeText(text: String): String {
+        return Normalizer.normalize(text.lowercase(), Normalizer.Form.NFD)
+            .replace(Regex("""\p{Mn}+"""), "")
     }
 
     private fun appearsBeforeUrl(value: String, sms: String): Boolean {
