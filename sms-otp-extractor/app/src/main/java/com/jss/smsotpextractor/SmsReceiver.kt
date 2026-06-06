@@ -21,8 +21,9 @@ class SmsReceiver : BroadcastReceiver() {
                     val processor = OtpProcessor(LiteRtAiOtpSelector(context))
                     val decision = processor.process(smsText)
                     ResultStore.save(context, smsText, decision)
-                    OtpClipboard.copyIfDetected(context, decision)
-                    OtpNotificationHelper.showIfDetected(context, decision)
+                    if (OtpClipboard.copyIfDetected(context, decision)) {
+                        OtpToastHelper.showCodeCopied(context)
+                    }
                 }
             } finally {
                 pendingResult.finish()

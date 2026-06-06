@@ -310,7 +310,7 @@ class MainActivity : Activity() {
             if (permissionDenied) {
                 addView(
                     TextView(this@MainActivity).apply {
-                        text = "SMS and notification permissions are needed so incoming codes can be detected and copied from the notification."
+                        text = "SMS permission is needed so incoming codes can be detected and copied automatically."
                         textSize = 14f
                         setTextColor(Colors.onBlocked)
                     },
@@ -363,23 +363,6 @@ class MainActivity : Activity() {
                 },
                 matchWrap(top = 5.dp),
             )
-            addView(
-                TextView(this@MainActivity).apply {
-                    text = "Notifications"
-                    textSize = 16f
-                    typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(Colors.onSurface)
-                },
-                matchWrap(top = 18.dp),
-            )
-            addView(
-                TextView(this@MainActivity).apply {
-                    text = "Shows the detected code with a quick copy action."
-                    textSize = 14f
-                    setTextColor(Colors.onSurfaceMuted)
-                },
-                matchWrap(top = 5.dp),
-            )
         }
     }
 
@@ -401,7 +384,7 @@ class MainActivity : Activity() {
             )
             addView(
                 TextView(this@MainActivity).apply {
-                    text = "When a text arrives, the app checks it locally, finds the OTP, and puts copy one tap away."
+                    text = "When a text arrives, the app checks it locally, finds the OTP, copies it, and shows a brief confirmation."
                     textSize = 16f
                     setTextColor(Colors.onSurfaceMuted)
                     setLineSpacing(4.dp.toFloat(), 1f)
@@ -439,12 +422,6 @@ class MainActivity : Activity() {
             if (checkSelfPermission(Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
                 add(Manifest.permission.RECEIVE_SMS)
             }
-            if (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            }
         }
     }
 
@@ -462,6 +439,7 @@ class MainActivity : Activity() {
     private fun copyLatestCode() {
         val code = ResultStore.latestCode(this) ?: return
         OtpClipboard.copy(this, code)
+        OtpToastHelper.showCodeCopied(this)
         refresh()
     }
 
@@ -616,7 +594,7 @@ class MainActivity : Activity() {
         private val mutedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val startMs = System.currentTimeMillis()
         private val rect = RectF()
-        private val notificationRect = RectF()
+        private val messageRect = RectF()
 
         init {
             setLayerType(LAYER_TYPE_SOFTWARE, null)
@@ -634,7 +612,7 @@ class MainActivity : Activity() {
             val phoneLeft = centerX - phoneW / 2f
 
             drawPhone(canvas, phoneLeft, top, phoneW, phoneH)
-            drawNotification(canvas, phoneLeft, top, phoneW, progress)
+            drawIncomingMessage(canvas, phoneLeft, top, phoneW, progress)
             drawScanner(canvas, progress)
             drawCopiedCode(canvas, phoneLeft, top, phoneW, phoneH, progress)
             postInvalidateOnAnimation()
@@ -658,7 +636,7 @@ class MainActivity : Activity() {
             canvas.drawRoundRect(rect, 4.dpF, 4.dpF, paint)
         }
 
-        private fun drawNotification(canvas: Canvas, phoneLeft: Float, phoneTop: Float, phoneW: Float, progress: Float) {
+        private fun drawIncomingMessage(canvas: Canvas, phoneLeft: Float, phoneTop: Float, phoneW: Float, progress: Float) {
             val fadeIn = ease(segment(progress, 0.08f, 0.24f))
             val fadeOut = 1f - ease(segment(progress, 0.82f, 0.96f))
             val alpha = (fadeIn * fadeOut * 255).toInt().coerceIn(0, 255)
@@ -666,7 +644,7 @@ class MainActivity : Activity() {
             val top = phoneTop + 62.dpF
             val right = phoneLeft + phoneW - 26.dpF
             val bottom = top + 104.dpF
-            notificationRect.set(left, top, right, bottom)
+            messageRect.set(left, top, right, bottom)
 
             paint.alpha = alpha
             paint.color = Color.rgb(255, 255, 255)
@@ -698,10 +676,10 @@ class MainActivity : Activity() {
 
             val alphaOut = 1f - ease(segment(progress, 0.62f, 0.72f))
             val alpha = (alphaOut * 255).toInt().coerceIn(0, 255)
-            val left = notificationRect.left - 8.dpF
-            val top = notificationRect.top - 8.dpF
-            val right = notificationRect.right + 8.dpF
-            val bottom = notificationRect.bottom + 8.dpF
+            val left = messageRect.left - 8.dpF
+            val top = messageRect.top - 8.dpF
+            val right = messageRect.right + 8.dpF
+            val bottom = messageRect.bottom + 8.dpF
 
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 2.dpF
@@ -752,8 +730,8 @@ class MainActivity : Activity() {
 
             textPaint.color = Color.WHITE
             textPaint.alpha = alpha
-            textPaint.textSize = 19.dpF
-            canvas.drawText("482913 copied", left + 22.dpF, top + 39.dpF, textPaint)
+            textPaint.textSize = 15.dpF
+            canvas.drawText("Code copied to clipboard", left + 18.dpF, top + 39.dpF, textPaint)
 
             paint.alpha = 255
             textPaint.alpha = 255
