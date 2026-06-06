@@ -1,8 +1,8 @@
 # SMS OTP Extractor
 
-An Android Kotlin prototype for detecting one-time passwords from SMS messages locally, without cloud APIs or network access.
+An Android Kotlin prototype for detecting one-time passwords from SMS messages locally, without cloud APIs or network access. The app brings the similar built-in feature on iOS to Android. Combined with Link to Windows/Galaxy Connect, this app auto-copies the clipboard straight to your PC so there is no need to find your phone or take it out of your pocket.
 
-App tries to imitate the similar built-in feature on iOS but on Android.
+I made this app cause i was mad at Google's implementation where I need to physically open my phone if i was using my PC or click "copy" on the notification when a 2FA code shows up. This bypasses that and immediately copies it to the clipboard, which can be synced using Galaxy Connect to your PC, for example.
 
 Planned and debugged by me but built by Codex.
 
