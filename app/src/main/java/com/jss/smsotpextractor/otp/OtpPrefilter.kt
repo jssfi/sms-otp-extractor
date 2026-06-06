@@ -42,6 +42,8 @@ object OtpPrefilter {
         "tan",
     )
 
+    private val specificOtpPositiveKeywords = positiveKeywords - listOf("code", "pin", "kod", "codigo", "codice")
+
     private val negativeKeywords = listOf(
         "balance",
         "statement",
@@ -51,6 +53,8 @@ object OtpPrefilter {
         "offer",
         "sale",
         "appointment",
+        "meeting",
+        "room",
         "tracking",
         "shipment",
         "delivery",
@@ -59,6 +63,8 @@ object OtpPrefilter {
         "case",
         "paid",
         "payment",
+        "charged",
+        "coupon",
     )
 
     fun classify(sms: String, candidates: List<OtpCandidate>): PrefilterResult {
@@ -67,10 +73,15 @@ object OtpPrefilter {
         }
 
         val normalized = normalizeText(sms)
+        if (candidates.all { looksLikeUrlReference(it.value, normalized) }) {
+            return PrefilterResult(possibleOtp = false, reason = "url_reference")
+        }
+
         val keywordText = stripUrlNoise(normalized)
         val hasPositive = containsAnyKeyword(keywordText, positiveKeywords)
+        val hasSpecificPositive = containsAnyKeyword(keywordText, specificOtpPositiveKeywords)
         val hasNegative = containsAnyKeyword(keywordText, negativeKeywords)
-        if (hasNegative && !hasPositive) {
+        if (hasNegative && !hasSpecificPositive) {
             return PrefilterResult(possibleOtp = false, reason = "negative_keyword")
         }
 
@@ -91,6 +102,12 @@ object OtpPrefilter {
         return keywords.any { keyword ->
             Regex("""(?<![a-z0-9])${Regex.escape(keyword)}(?![a-z0-9])""").containsMatchIn(text)
         }
+    }
+
+    private fun looksLikeUrlReference(value: String, normalizedSms: String): Boolean {
+        val escaped = Regex.escape(value.lowercase())
+        return Regex("""(?:[?&][a-z0-9_-]+=$escaped\b|(?<![a-z0-9])(?:id|token|ref|session)=$escaped\b|/$escaped(?:\b|[/?#]))""")
+            .containsMatchIn(normalizedSms)
     }
 
     private fun normalizeText(text: String): String {

@@ -218,7 +218,7 @@ class OtpPipelineTest {
         )
 
         assertIs<OtpDecision.NoOtp>(decision)
-        assertEquals("negative_keyword", decision.reason)
+        assertEquals("url_reference", decision.reason)
     }
 
     @Test

@@ -34,6 +34,8 @@ object HeuristicScorer {
         "tan",
     )
 
+    private val specificOtpPositive = strongPositive - listOf("code", "pin", "kod", "codigo", "codice")
+
     private val weakPositive = listOf(
         "security",
         "authenticate",
@@ -71,6 +73,7 @@ object HeuristicScorer {
         "customer",
         "account",
         "iban",
+        "card",
     )
 
     private val hardNegativeWords = listOf(
@@ -82,11 +85,15 @@ object HeuristicScorer {
         "offer",
         "sale",
         "appointment",
+        "meeting",
+        "room",
         "tracking",
         "shipment",
         "delivery",
         "paid",
         "payment",
+        "charged",
+        "coupon",
     )
 
     private const val BASE_SCORE = 10
@@ -102,6 +109,7 @@ object HeuristicScorer {
     private const val SHORT_MESSAGE_SCORE = 8
     private const val BEFORE_URL_SCORE = 8
     private const val REPEATED_CODE_SCORE = 10
+    private const val TRANSACTION_OTP_PATTERN_SCORE = 45
     private const val DIRECT_REFERENCE_PENALTY = 30
     private const val REFERENCE_CONTEXT_PENALTY = 12
     private const val HARD_NEGATIVE_CONTEXT_PENALTY = 22
@@ -147,10 +155,11 @@ object HeuristicScorer {
         if (isShortOtpLikeMessage(normalizedSms)) score += SHORT_MESSAGE_SCORE
         if (appearsBeforeUrl(value, sms)) score += BEFORE_URL_SCORE
         if (isRepeated(value, sms)) score += REPEATED_CODE_SCORE
+        if (hasTransactionOtpPattern(value, normalizedSms)) score += TRANSACTION_OTP_PATTERN_SCORE
 
         if (referenceWords.any { word -> Regex("""(?<![a-z0-9])$word\W+${Regex.escape(value.lowercase())}\b""").containsMatchIn(context) }) score -= DIRECT_REFERENCE_PENALTY
         if (containsAnyKeyword(context, referenceWords) && !containsAnyKeyword(context, strongPositive)) score -= REFERENCE_CONTEXT_PENALTY
-        if (containsAnyKeyword(context, hardNegativeWords) && !containsAnyKeyword(context, strongPositive)) score -= HARD_NEGATIVE_CONTEXT_PENALTY
+        if (containsAnyKeyword(context, hardNegativeWords) && !containsAnyKeyword(context, specificOtpPositive)) score -= HARD_NEGATIVE_CONTEXT_PENALTY
         if (looksLikeDate(value)) score -= DATE_PENALTY
         if (looksLikeTime(value, context)) score -= TIME_PENALTY
         if (looksLikePhoneOrLongReference(value)) score -= LONG_REFERENCE_PENALTY
@@ -225,6 +234,12 @@ object HeuristicScorer {
             .findAll(sms)
             .take(2)
             .count() > 1
+    }
+
+    private fun hasTransactionOtpPattern(value: String, normalizedSms: String): Boolean {
+        val escaped = Regex.escape(value.lowercase())
+        return Regex("""\botp\b.{0,90}\b(?:is|:)\s*$escaped\b|\b$escaped\b.{0,90}\botp\b""")
+            .containsMatchIn(normalizedSms)
     }
 
     private fun looksLikeDate(value: String): Boolean {
