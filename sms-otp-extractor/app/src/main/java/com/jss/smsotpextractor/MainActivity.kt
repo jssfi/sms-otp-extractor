@@ -3,7 +3,10 @@ package com.jss.smsotpextractor
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -19,8 +22,10 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Space
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,6 +52,45 @@ class MainActivity : Activity() {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         }
 
+        if (missingPermissions().isNotEmpty()) {
+            showPermissionOnboarding()
+        } else if (!onboardingComplete()) {
+            showDemoOnboarding()
+        } else {
+            showMainContent()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::listeningLabel.isInitialized) {
+            animationHandler.removeCallbacks(listeningAnimation)
+            animationHandler.post(listeningAnimation)
+            refresh()
+        }
+    }
+
+    override fun onPause() {
+        animationHandler.removeCallbacks(listeningAnimation)
+        super.onPause()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQUEST_PERMISSIONS) return
+
+        if (missingPermissions().isEmpty()) {
+            showDemoOnboarding()
+        } else {
+            showPermissionOnboarding(permissionDenied = true)
+        }
+    }
+
+    private fun showMainContent() {
         historyList = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -77,20 +121,9 @@ class MainActivity : Activity() {
                 addView(content)
             },
         )
-        requestNeededPermissions()
         refresh()
-    }
-
-    override fun onResume() {
-        super.onResume()
         animationHandler.removeCallbacks(listeningAnimation)
         animationHandler.post(listeningAnimation)
-        refresh()
-    }
-
-    override fun onPause() {
-        animationHandler.removeCallbacks(listeningAnimation)
-        super.onPause()
     }
 
     private fun hero(): LinearLayout {
@@ -234,8 +267,162 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun requestNeededPermissions() {
-        val permissions = buildList {
+    private fun showPermissionOnboarding(permissionDenied: Boolean = false) {
+        animationHandler.removeCallbacks(listeningAnimation)
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24.dp, 80.dp, 24.dp, 28.dp)
+            setBackgroundColor(Colors.background)
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "Welcome! Let's get you set up"
+                    textSize = 31f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Colors.onSurface)
+                    includeFontPadding = false
+                    setLineSpacing(2.dp.toFloat(), 1f)
+                },
+                matchWrap(),
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "We'll need a couple permissions to start."
+                    textSize = 16f
+                    setTextColor(Colors.onSurfaceMuted)
+                    setLineSpacing(4.dp.toFloat(), 1f)
+                },
+                matchWrap(top = 14.dp),
+            )
+            addView(permissionCard(), matchWrap(top = 36.dp))
+            if (permissionDenied) {
+                addView(
+                    TextView(this@MainActivity).apply {
+                        text = "SMS and notification permissions are needed so incoming codes can be detected and copied from the notification."
+                        textSize = 14f
+                        setTextColor(Colors.onBlocked)
+                    },
+                    matchWrap(top = 16.dp),
+                )
+            }
+            addView(Space(this@MainActivity), verticalSpacer())
+            addView(
+                actionButton("Grant permissions", Colors.primary, Colors.onPrimary) {
+                    val permissions = missingPermissions()
+                    if (permissions.isEmpty()) {
+                        showDemoOnboarding()
+                    } else {
+                        requestPermissions(permissions.toTypedArray(), REQUEST_PERMISSIONS)
+                    }
+                },
+                matchWrap(top = 24.dp),
+            )
+        }
+
+        setContentView(
+            FrameLayout(this).apply {
+                setBackgroundColor(Colors.background)
+                addView(content, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ))
+            },
+        )
+    }
+
+    private fun permissionCard(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Colors.emptyContainer, 26.dp, Colors.outline, 1.dp)
+            setPadding(18.dp, 18.dp, 18.dp, 18.dp)
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "SMS access"
+                    textSize = 16f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Colors.onSurface)
+                },
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "Watches for incoming messages that may contain one-time codes."
+                    textSize = 14f
+                    setTextColor(Colors.onSurfaceMuted)
+                },
+                matchWrap(top = 5.dp),
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "Notifications"
+                    textSize = 16f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Colors.onSurface)
+                },
+                matchWrap(top = 18.dp),
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "Shows the detected code with a quick copy action."
+                    textSize = 14f
+                    setTextColor(Colors.onSurfaceMuted)
+                },
+                matchWrap(top = 5.dp),
+            )
+        }
+    }
+
+    private fun showDemoOnboarding() {
+        animationHandler.removeCallbacks(listeningAnimation)
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24.dp, 56.dp, 24.dp, 28.dp)
+            setBackgroundColor(Colors.background)
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "Here's the magic"
+                    textSize = 30f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Colors.onSurface)
+                    includeFontPadding = false
+                },
+                matchWrap(),
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "When a text arrives, the app checks it locally, finds the OTP, and puts copy one tap away."
+                    textSize = 16f
+                    setTextColor(Colors.onSurfaceMuted)
+                    setLineSpacing(4.dp.toFloat(), 1f)
+                },
+                matchWrap(top = 12.dp),
+            )
+            addView(
+                OtpDemoView(this@MainActivity).apply {
+                    minimumHeight = 460.dp
+                },
+                fillRemaining(top = 24.dp),
+            )
+            addView(
+                actionButton("Start using app", Colors.primary, Colors.onPrimary) {
+                    markOnboardingComplete()
+                    showMainContent()
+                },
+                matchWrap(top = 24.dp),
+            )
+        }
+
+        setContentView(
+            FrameLayout(this).apply {
+                setBackgroundColor(Colors.background)
+                addView(content, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ))
+            },
+        )
+    }
+
+    private fun missingPermissions(): List<String> {
+        return buildList {
             if (checkSelfPermission(Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
                 add(Manifest.permission.RECEIVE_SMS)
             }
@@ -246,10 +433,17 @@ class MainActivity : Activity() {
                 add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        if (permissions.isNotEmpty()) {
-            requestPermissions(permissions.toTypedArray(), REQUEST_PERMISSIONS)
-        }
-        refresh()
+    }
+
+    private fun onboardingComplete(): Boolean {
+        return getPreferences(MODE_PRIVATE).getBoolean(PREF_ONBOARDING_COMPLETE, false)
+    }
+
+    private fun markOnboardingComplete() {
+        getPreferences(MODE_PRIVATE)
+            .edit()
+            .putBoolean(PREF_ONBOARDING_COMPLETE, true)
+            .apply()
     }
 
     private fun copyLatestCode() {
@@ -347,11 +541,28 @@ class MainActivity : Activity() {
         ).apply { leftMargin = left }
     }
 
+    private fun verticalSpacer(): LinearLayout.LayoutParams {
+        return LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            0,
+            1f,
+        )
+    }
+
+    private fun fillRemaining(top: Int = 0): LinearLayout.LayoutParams {
+        return LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            0,
+            1f,
+        ).apply { topMargin = top }
+    }
+
     private val Int.dp: Int
         get() = (this * resources.displayMetrics.density).toInt()
 
     private companion object {
         const val REQUEST_PERMISSIONS = 10
+        const val PREF_ONBOARDING_COMPLETE = "onboarding_complete"
 
         object Colors {
             val background = Color.rgb(255, 248, 242)
@@ -369,5 +580,169 @@ class MainActivity : Activity() {
             val onSurface = Color.rgb(31, 31, 35)
             val onSurfaceMuted = Color.rgb(88, 84, 93)
         }
+    }
+
+    private class OtpDemoView(context: Activity) : View(context) {
+        private val density = resources.displayMetrics.density
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+        private val mutedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val startMs = System.currentTimeMillis()
+        private val rect = RectF()
+        private val notificationRect = RectF()
+
+        init {
+            setLayerType(LAYER_TYPE_SOFTWARE, null)
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            super.onDraw(canvas)
+            val elapsed = ((System.currentTimeMillis() - startMs) % 4400L).toFloat()
+            val progress = elapsed / 4400f
+            val w = width.toFloat()
+            val centerX = w / 2f
+            val top = 2.dpF
+            val phoneW = (w * 0.86f).coerceAtMost(330.dpF)
+            val phoneH = (height - 8.dpF).coerceAtLeast(430.dpF)
+            val phoneLeft = centerX - phoneW / 2f
+
+            drawPhone(canvas, phoneLeft, top, phoneW, phoneH)
+            drawNotification(canvas, phoneLeft, top, phoneW, progress)
+            drawScanner(canvas, progress)
+            drawCopiedCode(canvas, phoneLeft, top, phoneW, phoneH, progress)
+            postInvalidateOnAnimation()
+        }
+
+        private fun drawPhone(canvas: Canvas, left: Float, top: Float, width: Float, height: Float) {
+            paint.color = Color.argb(42, 31, 31, 35)
+            rect.set(left + 5.dpF, top + 8.dpF, left + width + 5.dpF, top + height + 8.dpF)
+            canvas.drawRoundRect(rect, 34.dpF, 34.dpF, paint)
+
+            paint.color = Color.rgb(31, 31, 35)
+            rect.set(left, top, left + width, top + height)
+            canvas.drawRoundRect(rect, 34.dpF, 34.dpF, paint)
+
+            paint.color = Color.rgb(252, 249, 244)
+            rect.set(left + 12.dpF, top + 14.dpF, left + width - 12.dpF, top + height - 14.dpF)
+            canvas.drawRoundRect(rect, 24.dpF, 24.dpF, paint)
+
+            paint.color = Color.rgb(31, 31, 35)
+            rect.set(left + width / 2f - 30.dpF, top + 24.dpF, left + width / 2f + 30.dpF, top + 30.dpF)
+            canvas.drawRoundRect(rect, 4.dpF, 4.dpF, paint)
+        }
+
+        private fun drawNotification(canvas: Canvas, phoneLeft: Float, phoneTop: Float, phoneW: Float, progress: Float) {
+            val fadeIn = ease(segment(progress, 0.08f, 0.24f))
+            val fadeOut = 1f - ease(segment(progress, 0.82f, 0.96f))
+            val alpha = (fadeIn * fadeOut * 255).toInt().coerceIn(0, 255)
+            val left = phoneLeft + 26.dpF
+            val top = phoneTop + 62.dpF
+            val right = phoneLeft + phoneW - 26.dpF
+            val bottom = top + 104.dpF
+            notificationRect.set(left, top, right, bottom)
+
+            paint.alpha = alpha
+            paint.color = Color.rgb(255, 255, 255)
+            rect.set(left, top, right, bottom)
+            canvas.drawRoundRect(rect, 20.dpF, 20.dpF, paint)
+
+            paint.color = Color.rgb(209, 250, 229)
+            rect.set(left + 14.dpF, top + 16.dpF, left + 44.dpF, top + 46.dpF)
+            canvas.drawOval(rect, paint)
+
+            textPaint.color = Color.rgb(31, 31, 35)
+            textPaint.alpha = alpha
+            textPaint.textSize = 13.dpF
+            canvas.drawText("New message", left + 54.dpF, top + 29.dpF, textPaint)
+
+            mutedTextPaint.color = Color.rgb(88, 84, 93)
+            mutedTextPaint.alpha = alpha
+            mutedTextPaint.textSize = 12.dpF
+            canvas.drawText("Your login code is 482913", left + 18.dpF, top + 66.dpF, mutedTextPaint)
+
+            paint.alpha = 255
+            textPaint.alpha = 255
+            mutedTextPaint.alpha = 255
+        }
+
+        private fun drawScanner(canvas: Canvas, progress: Float) {
+            val scanProgress = segment(progress, 0.30f, 0.62f)
+            if (scanProgress <= 0f) return
+
+            val alphaOut = 1f - ease(segment(progress, 0.62f, 0.72f))
+            val alpha = (alphaOut * 255).toInt().coerceIn(0, 255)
+            val left = notificationRect.left - 8.dpF
+            val top = notificationRect.top - 8.dpF
+            val right = notificationRect.right + 8.dpF
+            val bottom = notificationRect.bottom + 8.dpF
+
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2.dpF
+            paint.color = Color.rgb(13, 95, 116)
+            paint.alpha = alpha
+            rect.set(left, top, right, bottom)
+            canvas.drawRoundRect(rect, 18.dpF, 18.dpF, paint)
+            paint.style = Paint.Style.FILL
+
+            val lineY = top + ease(scanProgress) * (bottom - top)
+            paint.color = Color.rgb(13, 95, 116)
+            paint.alpha = alpha
+            rect.set(left + 12.dpF, lineY - 2.dpF, right - 12.dpF, lineY + 2.dpF)
+            canvas.drawRoundRect(rect, 2.dpF, 2.dpF, paint)
+
+            mutedTextPaint.color = Color.rgb(88, 84, 93)
+            mutedTextPaint.alpha = alpha
+            mutedTextPaint.textSize = 12.dpF
+            canvas.drawText("Finding OTP...", left + 18.dpF, bottom + 24.dpF, mutedTextPaint)
+
+            paint.alpha = 255
+            mutedTextPaint.alpha = 255
+        }
+
+        private fun drawCopiedCode(
+            canvas: Canvas,
+            phoneLeft: Float,
+            phoneTop: Float,
+            phoneW: Float,
+            phoneH: Float,
+            progress: Float,
+        ) {
+            val popIn = ease(segment(progress, 0.66f, 0.76f))
+            val fadeOut = 1f - ease(segment(progress, 0.88f, 0.98f))
+            val copiedProgress = popIn * fadeOut
+            if (copiedProgress <= 0f) return
+
+            val left = phoneLeft + 42.dpF
+            val top = phoneTop + phoneH - 118.dpF + (1f - popIn) * 34.dpF
+            val right = phoneLeft + phoneW - 42.dpF
+            val bottom = top + 64.dpF
+            val alpha = (copiedProgress * 255).toInt().coerceIn(0, 255)
+
+            paint.color = Color.rgb(13, 95, 116)
+            paint.alpha = alpha
+            rect.set(left, top, right, bottom)
+            canvas.drawRoundRect(rect, 20.dpF, 20.dpF, paint)
+
+            textPaint.color = Color.WHITE
+            textPaint.alpha = alpha
+            textPaint.textSize = 19.dpF
+            canvas.drawText("482913 copied", left + 22.dpF, top + 39.dpF, textPaint)
+
+            paint.alpha = 255
+            textPaint.alpha = 255
+        }
+
+        private fun segment(value: Float, start: Float, end: Float): Float {
+            return ((value - start) / (end - start)).coerceIn(0f, 1f)
+        }
+
+        private fun ease(value: Float): Float {
+            return 1f - (1f - value) * (1f - value)
+        }
+
+        private val Int.dpF: Float
+            get() = this * density
     }
 }
