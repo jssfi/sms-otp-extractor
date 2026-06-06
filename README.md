@@ -75,7 +75,7 @@ The app listens for incoming SMS messages, extracts possible OTP candidates, sco
 
 - Weirdly formatted OTPs
 - Non-English messages with bad context
-- Codes split with spaces like "1 2 3 4"
+- Codes split with unusual separators like "1.2.3.4"
 - Messages with no obvious code (duh)
 - App-specific approval links with no actual code in the SMS
 - Long alphanumeric tokens that look like session IDs instead of short OTPs

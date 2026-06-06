@@ -18,6 +18,13 @@ class OtpPipelineTest {
     }
 
     @Test
+    fun extractsSeparatedNumericCodeCandidate() {
+        val candidates = CandidateExtractor.extract("Your OTP is 123-456")
+
+        assertEquals(listOf("123456"), candidates.map { it.value })
+    }
+
+    @Test
     fun penalizesDateReferenceCandidate() {
         val sms = "Your login code is 123456. Ref 20260605"
         val scored = HeuristicScorer.score(sms, CandidateExtractor.extract(sms))
@@ -286,6 +293,10 @@ class OtpPipelineTest {
             SampleCase(
                 sms = "Use 554433 to login. Never share this code.",
                 expectedCode = "554433",
+            ),
+            SampleCase(
+                sms = "Your OTP is 123-456",
+                expectedCode = "123456",
             ),
             SampleCase(
                 sms = "Your order 482913 has shipped. Tracking 999888777 will update soon.",
