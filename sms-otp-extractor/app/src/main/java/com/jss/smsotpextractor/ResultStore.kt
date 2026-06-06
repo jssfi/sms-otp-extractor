@@ -1,6 +1,7 @@
 package com.jss.smsotpextractor
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.jss.smsotpextractor.otp.OtpCandidate
 import com.jss.smsotpextractor.otp.OtpDecision
 import com.jss.smsotpextractor.otp.OtpTimings
@@ -73,6 +74,26 @@ object ResultStore {
             .remove(KEY_CODE)
             .remove(KEY_HISTORY)
             .apply()
+    }
+
+    fun registerHistoryListener(
+        context: Context,
+        listener: SharedPreferences.OnSharedPreferenceChangeListener,
+    ) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun unregisterHistoryListener(
+        context: Context,
+        listener: SharedPreferences.OnSharedPreferenceChangeListener,
+    ) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun isHistoryKey(key: String?): Boolean {
+        return key == KEY_HISTORY || key == KEY_CODE || key == KEY_TEXT
     }
 
     fun formatDecision(sms: String, decision: OtpDecision): String {

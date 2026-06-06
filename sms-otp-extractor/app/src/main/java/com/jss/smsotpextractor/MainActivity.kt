@@ -2,6 +2,7 @@ package com.jss.smsotpextractor
 
 import android.Manifest
 import android.app.Activity
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Color
@@ -36,6 +37,15 @@ class MainActivity : Activity() {
     private var dotFrame = 0
     private lateinit var listeningLabel: TextView
     private lateinit var historyList: LinearLayout
+    private var observingHistory = false
+    private val historyChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (!ResultStore.isHistoryKey(key)) return@OnSharedPreferenceChangeListener
+        animationHandler.post {
+            if (::historyList.isInitialized) {
+                refresh()
+            }
+        }
+    }
     private val listeningAnimation = object : Runnable {
         override fun run() {
             listeningLabel.text = listeningText(dotFrame % 4)
@@ -64,6 +74,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::listeningLabel.isInitialized) {
+            startObservingHistory()
             animationHandler.removeCallbacks(listeningAnimation)
             animationHandler.post(listeningAnimation)
             refresh()
@@ -72,6 +83,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         animationHandler.removeCallbacks(listeningAnimation)
+        stopObservingHistory()
         super.onPause()
     }
 
@@ -121,6 +133,7 @@ class MainActivity : Activity() {
                 addView(content)
             },
         )
+        startObservingHistory()
         refresh()
         animationHandler.removeCallbacks(listeningAnimation)
         animationHandler.post(listeningAnimation)
@@ -454,6 +467,18 @@ class MainActivity : Activity() {
 
     private fun refresh() {
         renderHistory()
+    }
+
+    private fun startObservingHistory() {
+        if (observingHistory) return
+        ResultStore.registerHistoryListener(this, historyChangeListener)
+        observingHistory = true
+    }
+
+    private fun stopObservingHistory() {
+        if (!observingHistory) return
+        ResultStore.unregisterHistoryListener(this, historyChangeListener)
+        observingHistory = false
     }
 
     private fun sectionHeader(): LinearLayout {
