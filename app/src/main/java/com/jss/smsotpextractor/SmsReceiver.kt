@@ -18,7 +18,12 @@ class SmsReceiver : BroadcastReceiver() {
                 val smsText = Telephony.Sms.Intents.getMessagesFromIntent(intent)
                     .joinToString(separator = "") { it.messageBody.orEmpty() }
                 if (smsText.isNotBlank()) {
-                    val processor = OtpProcessor(LiteRtAiOtpSelector(context))
+                    val aiSelector = if (BuildConfig.AI_ENABLED) {
+                        LiteRtAiOtpSelector(context)
+                    } else {
+                        HeuristicOnlyAiSelector
+                    }
+                    val processor = OtpProcessor(aiSelector)
                     val decision = processor.process(smsText)
                     ResultStore.save(context, smsText, decision)
                     if (OtpClipboard.copyIfDetected(context, decision)) {

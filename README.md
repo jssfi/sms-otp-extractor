@@ -6,20 +6,27 @@ I made this app cause i was mad at Google's implementation where I need to physi
 
 Planned and debugged by me but built by Codex.
 
-## The app has two different versions:
+## The app has three different versions:
 
 ### 1. LiteRT-LM model bundled in
 - In this version the tested LiteRT-LM model is bundled into the app.
 - Download size is bigger, but setup is much faster.
+- Model should work out some of the problems heuristics only can't, but is experimental.
 
 ### 2. No model bundled in
 - The APK size is much smaller, but you need to find and download a suitable LiteRT-LM model yourself.
 - The app lets you import any `.litertlm` file through Android's file picker.
 - The app tests the imported model locally and warns if it looks slow or unreliable, but still lets you use it.
 
+### 3. Heuristics only
+- The simplest no-model version.
+- No LiteRT-LM model is bundled or imported.
+- Ambiguous messages are handled by local rules only, so it is faster and simpler but less flexible.
+- Highest chance of getting codes wrong, but is also the most power efficient and fast.
+
 ## What It Does
 
-The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small LiteRT-LM model when the result is not clear. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
+The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small LiteRT-LM model when the result is not clear. In the heuristics-only build, that model step is disabled. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
 
 ### What Works:
 
@@ -87,11 +94,12 @@ The debug APKs will be generated at:
 ```text
 app/build/outputs/apk/bundled/debug/app-bundled-debug.apk
 app/build/outputs/apk/lite/debug/app-lite-debug.apk
+app/build/outputs/apk/heuristic/debug/app-heuristic-debug.apk
 ```
 
-GitHub release uploads are named `sms-otp-<tag>-bundled.apk` and `sms-otp-<tag>-lite-experimental.apk`.
+GitHub release uploads are named `sms-otp-<tag>-bundled.apk`, `sms-otp-<tag>-lite-experimental.apk`, and `sms-otp-<tag>-heuristic-only.apk`.
 
-Build both release APKs locally:
+Build all release APKs locally:
 
 ```powershell
 .\gradlew.bat :app:assembleAllRelease --console=plain

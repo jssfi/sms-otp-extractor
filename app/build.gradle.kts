@@ -24,12 +24,21 @@ android {
         create("bundled") {
             dimension = "modelDistribution"
             buildConfigField("boolean", "BUNDLED_MODEL", "true")
+            buildConfigField("boolean", "AI_ENABLED", "true")
         }
         create("lite") {
             dimension = "modelDistribution"
             applicationIdSuffix = ".lite"
             versionNameSuffix = "-lite"
             buildConfigField("boolean", "BUNDLED_MODEL", "false")
+            buildConfigField("boolean", "AI_ENABLED", "true")
+        }
+        create("heuristic") {
+            dimension = "modelDistribution"
+            applicationIdSuffix = ".heuristic"
+            versionNameSuffix = "-heuristic"
+            buildConfigField("boolean", "BUNDLED_MODEL", "false")
+            buildConfigField("boolean", "AI_ENABLED", "false")
         }
     }
 
@@ -82,12 +91,12 @@ dependencies {
 
 tasks.register("assembleAllDebug") {
     group = "build"
-    description = "Builds both bundled and lite debug APKs."
-    dependsOn("assembleBundledDebug", "assembleLiteDebug")
+    description = "Builds bundled, lite, and heuristic debug APKs."
+    dependsOn("assembleBundledDebug", "assembleLiteDebug", "assembleHeuristicDebug")
 }
 
 tasks.register("assembleAllRelease") {
     group = "build"
-    description = "Builds both bundled and lite release APKs."
-    dependsOn("assembleBundledRelease", "assembleLiteRelease")
+    description = "Builds bundled, lite, and heuristic release APKs."
+    dependsOn("assembleBundledRelease", "assembleLiteRelease", "assembleHeuristicRelease")
 }

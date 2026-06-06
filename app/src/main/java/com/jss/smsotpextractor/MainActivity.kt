@@ -260,10 +260,22 @@ class MainActivity : Activity() {
                 matchWrap(top = 6.dp),
             )
             addView(
-                actionButton("Import .litertlm", Colors.primary, Colors.onPrimary) {
-                    openModelPicker()
-                }.apply {
-                    modelImportButton = this
+                if (BuildConfig.AI_ENABLED) {
+                    actionButton("Import .litertlm", Colors.primary, Colors.onPrimary) {
+                        openModelPicker()
+                    }.apply {
+                        modelImportButton = this
+                    }
+                } else {
+                    TextView(this@MainActivity).apply {
+                        text = "Heuristics only"
+                        textSize = 14f
+                        typeface = Typeface.DEFAULT_BOLD
+                        gravity = Gravity.CENTER
+                        setTextColor(Colors.primary)
+                        background = rounded(Colors.secondaryContainer, 24.dp)
+                        minHeight = 48.dp
+                    }
                 },
                 matchWrap(top = 14.dp),
             )
@@ -302,6 +314,12 @@ class MainActivity : Activity() {
         detailOverride: String? = null,
     ) {
         if (BuildConfig.BUNDLED_MODEL) return
+        if (!BuildConfig.AI_ENABLED) {
+            modelStatusTitle?.text = "Heuristics-only build"
+            modelStatusDetail?.text = "No LiteRT model is bundled or imported. Ambiguous messages are handled by local rules only."
+            modelImportButton?.isEnabled = false
+            return
+        }
         val metadata = ImportedModelStore.metadata(this)
         val modelExists = ImportedModelStore.modelFile(this).exists()
         val title = statusOverride ?: when {

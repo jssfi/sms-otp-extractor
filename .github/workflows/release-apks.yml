@@ -66,12 +66,17 @@ jobs:
           mkdir -p release-assets
           cp app/build/outputs/apk/bundled/release/app-bundled-release.apk "release-assets/sms-otp-${GITHUB_REF_NAME}-bundled.apk"
           cp app/build/outputs/apk/lite/release/app-lite-release.apk "release-assets/sms-otp-${GITHUB_REF_NAME}-lite-experimental.apk"
+          cp app/build/outputs/apk/heuristic/release/app-heuristic-release.apk "release-assets/sms-otp-${GITHUB_REF_NAME}-heuristic-only.apk"
 
       - name: Verify release APK model split
         run: |
           unzip -l release-assets/sms-otp-${GITHUB_REF_NAME}-bundled.apk | grep 'assets/models/SmolLM2_135M_Instruct.litertlm'
           if unzip -l release-assets/sms-otp-${GITHUB_REF_NAME}-lite-experimental.apk | grep 'assets/models/'; then
             echo "Lite APK unexpectedly contains model assets"
+            exit 1
+          fi
+          if unzip -l release-assets/sms-otp-${GITHUB_REF_NAME}-heuristic-only.apk | grep 'assets/models/'; then
+            echo "Heuristic APK unexpectedly contains model assets"
             exit 1
           fi
 
