@@ -31,6 +31,16 @@ To install:
 
 If Android blocks the install, make sure you downloaded the APK from the GitHub Release assets and not a source file or build log.
 
+## Screenshots
+
+| Onboarding | Demo | Copied |
+| --- | --- | --- |
+| <img src="screenshots/Screenshot%202026-06-06%20221659.png" width="220" alt="Onboarding screen explaining SMS access"> | <img src="screenshots/Screenshot%202026-06-06%20221708.png" width="220" alt="Demo animation showing a new SMS being scanned"> | <img src="screenshots/Screenshot%202026-06-06%20221717.png" width="220" alt="Demo animation showing code copied to clipboard"> |
+
+| Main screen | Recent activity |
+| --- | --- |
+| <img src="screenshots/Screenshot%202026-06-06%20221725.png" width="220" alt="Main app screen in the heuristics-only build"> | <img src="screenshots/Screenshot%202026-06-06%20222020.png" width="220" alt="Recent activity showing recognized and skipped SMS messages"> |
+
 ## The app has two different versions:
 
 ### 1. LiteRT-LM model bundled in
