@@ -6,6 +6,31 @@ I made this app cause i was mad at Google's implementation where I need to physi
 
 Planned and debugged by me but built by Codex.
 
+## Platform
+
+- Android app
+- Minimum supported version: Android 8.0 / API 26 (Tested working on Android 16; Samsung S25 Ultra and in emulators)
+- No backend or account needed
+
+## Install
+
+Download one of the APKs from the latest GitHub Release:
+
+- `sms-otp-<tag>-bundled.apk` includes the LiteRT-LM model.
+- `sms-otp-<tag>-lite.apk` is the small heuristics-only build.
+
+Releasing this to the Play Store is unfeasible since the app needs SMS permissions to work.
+
+To install:
+
+1. Download the APK on your Android device.
+2. Open it from your downloads/files app.
+3. Allow installing apps from that source if Android asks.
+4. Open SMS OTP Extractor and grant the SMS permission during onboarding.
+5. And you're now set up! Try logging in to something that has 2FA through SMS.
+
+If Android blocks the install, make sure you downloaded the APK from the GitHub Release assets and not a source file or build log.
+
 ## The app has two different versions:
 
 ### 1. LiteRT-LM model bundled in
@@ -52,9 +77,13 @@ The app listens for incoming SMS messages, extracts possible OTP candidates, sco
 - Non-English messages with bad context
 - Codes split with spaces like "1 2 3 4"
 - Messages with no obvious code (duh)
-- Messages with a link to approve (duh)
 - App-specific approval links with no actual code in the SMS
 - Long alphanumeric tokens that look like session IDs instead of short OTPs
+
+## Permissions
+
+- `RECEIVE_SMS`: needed so the app can detect incoming SMS messages automatically.
+- No `INTERNET` permission: the app does not call any cloud API or send messages off-device.
 
 ## Privacy
 
