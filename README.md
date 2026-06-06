@@ -25,11 +25,9 @@ To install:
 
 1. Download the APK on your Android device.
 2. Open it from your downloads/files app.
-3. Allow installing apps from that source if Android asks.
+3. Allow installing apps from that source if Android asks that.
 4. Open SMS OTP Extractor and grant the SMS permission during onboarding.
 5. And you're now set up! Try logging in to something that has 2FA through SMS.
-
-If Android blocks the install, make sure you downloaded the APK from the GitHub Release assets and not a source file or build log.
 
 ## Screenshots
 
@@ -48,17 +46,17 @@ Demo video: [README_Contents/20260606-1932-26.5062138.mp4](README_Contents/20260
 ### 1. LiteRT-LM model bundled in
 - In this version the tested LiteRT-LM model is bundled into the app.
 - Download size is bigger, but setup is much faster.
-- Model should work out some of the problems heuristics only can't, but is experimental.
+- Model should work out some of the problems heuristics only can't, but is experimental (models this small tend to not be that good).
 
 ### 2. Lite / heuristics only
-- No LiteRT-LM model is bundled or imported.
-- Ambiguous messages are handled by local rules only.
-- It is simpler, faster and more power efficient, but less flexible than the bundled AI version.
+- LiteRT-LM is not bundled or imported.
+- Messages are handled by local rules only.
+- It is simpler, faster and more power efficient, but in some cases more inaccurate than the bundled AI version.
 - It has the highest chance of getting tricky codes wrong.
 
 ## What It Does
 
-The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and only asks a small LiteRT-LM model when the result is not clear. In the lite build, that model step is disabled. The final selected code must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
+The app listens for incoming SMS messages, extracts possible OTP candidates, scores them and optionally asks a small LiteRT-LM model when the result is not clear. In the lite build, that model step is completely disabled and not installed. The final selected code (by the LiteRT-LM model) must exactly match one regex-extracted candidate. The model is not allowed to hallucinate codes.
 
 ### What Works:
 
@@ -67,13 +65,14 @@ The app listens for incoming SMS messages, extracts possible OTP candidates, sco
 - 4-6 digit codes near words like "code", "verification", "OTP", "PIN" or "passcode"
 - Some transaction/card OTP messages, like "your OTP for purchase ... is 123456"
 - A focused set of Finnish, Swedish, Spanish, Italian, German and French OTP wording
+  - If you have any words or examples that I can improve on, please make an issue and i'll add them :) 
 - Accented keyword variants like "código" / "verificación"
 - Avoiding many non-codes like dates, receipts, balances, invoices, references, coupons, appointments, tracking numbers and URL/query IDs
 - Avoiding sender names with numbers
 - Avoiding most codes that only appear inside links or URL query parameters
 - Auto-copying detected OTPs
 - Fully offline processing
-- Fast processing, usually a few ms for heuristic-only matches or 1-2 s with LiteRT-LM
+- Fast processing, usually a few ms for heuristic matches or 1-2 s with LiteRT-LM
 
 ### Kinda works
 
@@ -88,9 +87,8 @@ The app listens for incoming SMS messages, extracts possible OTP candidates, sco
 - Weirdly formatted OTPs
 - Non-English messages with bad context
 - Codes split with unusual separators like "1.2.3.4"
-- Messages with no obvious code (duh)
 - App-specific approval links with no actual code in the SMS
-- Long alphanumeric tokens that look like session IDs instead of short OTPs
+- Long alphanumeric tokens that look like IDs instead of short OTPs
 
 ## Permissions
 
@@ -144,5 +142,6 @@ If signing environment variables are not present, release APKs are built unsigne
 
 ## Notes
 
-This is a prototype, not production security software. SMS permissions are sensitive and may require special handling for app-store distribution.
-I made this app for myself to fix daily problems I have. No guarantees of it working or functioning properly are made. Provided "AS IS"... No future guarantees of updates, only if i find stuff that dont work :D
+This is a prototype, not production security software. SMS permissions are sensitive and may require special handling for app store distribution.
+I made this app for myself to fix a daily problem I have. No guarantees are made of it working perfectly or being maintained in the long term. Provided "AS IS". 
+Future updates are not guaranteed, but I may update it if I find things that do not work :D
